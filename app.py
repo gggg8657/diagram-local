@@ -35,6 +35,9 @@ def read(p):
         return f.read()
 
 
+SYSTEM = read(os.path.join(ROOT, "goal-prompt.md"))  # 요청마다 다시 읽지 않음
+
+
 def write(p, s):
     with open(p, "w", encoding="utf-8") as f:
         f.write(s)
@@ -123,14 +126,14 @@ def sanity(src):
     for a, b in ("[]", "()", "{}"):
         if src.count(a) != src.count(b):
             return f"괄호 불일치 {a}{b}"
-    if src.count('"') % 2:
+    if src.replace('\\"', "").count('"') % 2:  # 이스케이프된 따옴표는 제외
         return "큰따옴표 홀수"
     return None
 
 
 def diagram(messages, dtype="auto", model=MODEL, on_token=None):
     """messages: [{role, content}] 대화. 마지막 user 메시지에 유형 힌트를 붙여 LLM 호출 → Mermaid 소스."""
-    system = read(os.path.join(ROOT, "goal-prompt.md"))
+    system = SYSTEM
     msgs = [dict(m) for m in messages]
     hint = TYPES.get(dtype, "")
     if hint and msgs and msgs[-1]["role"] == "user":
@@ -140,7 +143,7 @@ def diagram(messages, dtype="auto", model=MODEL, on_token=None):
 
 
 def repair(src, error, model=MODEL):
-    system = read(os.path.join(ROOT, "goal-prompt.md"))
+    system = SYSTEM
     user = f"[파싱 오류]\n{error}\n\n[소스]\n{src}"
     return _clean(ollama(system, [{"role": "user", "content": user}], model))
 

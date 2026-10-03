@@ -38,7 +38,6 @@ spin() {
 has()   { command -v "$1" >/dev/null 2>&1; }
 probe() { curl -fsS -m 2 "$1" >/dev/null 2>&1; }
 wait_for() { for _ in $(seq 1 "${2:-30}"); do probe "$1" && return 0; sleep 1; done; return 1; }
-node_ok() { has node && [ "$(node -p 'process.versions.node.split(".")[0]')" -ge 20 ] 2>/dev/null; }
 
 banner
 
