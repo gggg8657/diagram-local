@@ -2,7 +2,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>diagram local</title>
-<script src="/static/mermaid.min.js"></script>
+<script src="static/mermaid.min.js"></script>
 <style>
   :root{--bg:#fafaf8;--fg:#1f1f1f;--muted:#777;--line:#ddd;--acc:#2f6fed;--panel:#fff}
   body.dark{--bg:#1b1b1d;--fg:#e8e8e8;--muted:#999;--line:#444;--panel:#242427}
@@ -72,7 +72,7 @@ $('examples').innerHTML = EXAMPLES.map((e, i) => `<button data-i="${i}">${e[0]}<
 $('examples').querySelectorAll('button').forEach(b => b.onclick = () => { $('q').value = EXAMPLES[b.dataset.i][1]; });
 
 mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'default' });
-fetch('/api/models').then(r => r.json()).then(ms => {
+fetch('api/models').then(r => r.json()).then(ms => {
   $('model').innerHTML = ms.map(m => `<option ${m === MODEL_DEFAULT ? 'selected' : ''}>${m}</option>`).join('');
 }).catch(() => $('status').textContent = 'LLM 서버에 연결할 수 없습니다');
 
@@ -90,7 +90,7 @@ async function render(src, allowRepair = true) {
     if (allowRepair && !repairing && messages.length) {
       repairing = true; $('status').textContent = '파싱 오류 → LLM 자동 수정 1회';
       try {
-        const r = await fetch('/api/repair', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        const r = await fetch('api/repair', { method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ source: src, error: msg, model: $('model').value }) }).then(r => r.json());
         if (r.source) { $('src').value = r.source; messages[messages.length - 1].content = r.source; await render(r.source, false); $('status').textContent = $('err').textContent ? '자동 수정 실패 — 소스를 직접 고치세요' : '자동 수정됨'; }
       } finally { repairing = false; }
@@ -108,7 +108,7 @@ $('go').onclick = async () => {
   messages.push({ role: 'user', content }); addMsg('user', text); $('q').value = '';
   $('go').disabled = true; $('status').textContent = '생성 중…'; const out = addMsg('assistant', ''); const t0 = Date.now();
   try {
-    const r = await fetch('/api/diagram', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    const r = await fetch('api/diagram', { method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messages, type: $('type').value, model: $('model').value }) });
     const reader = r.body.getReader(), dec = new TextDecoder(); let buf = '';
     while (true) {
@@ -142,10 +142,10 @@ $('dlpng').onclick = () => {
 $('copy').onclick = () => navigator.clipboard.writeText($('src').value);
 
 async function loadRuns() {
-  const rs = await fetch('/api/runs').then(r => r.json());
+  const rs = await fetch('api/runs').then(r => r.json());
   $('runs').innerHTML = rs.map(r => `<li data-id="${r.id}">${r.ts} · ${r.type} · ${r.head}…</li>`).join('') || '<li>없음</li>';
   $('runs').querySelectorAll('li[data-id]').forEach(li => li.onclick = async () => {
-    const j = await fetch('/api/runs/' + li.dataset.id).then(r => r.json());
+    const j = await fetch('api/runs/' + li.dataset.id).then(r => r.json());
     messages = j.messages; $('chat').innerHTML = ''; messages.forEach(m => addMsg(m.role, m.role === 'user' ? m.content.replace(/^\[현재 소스\][\s\S]*\[요청\]\n/, '') : m.content));
     $('src').value = j.source; render(j.source, false);
   });
