@@ -1,0 +1,154 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>diagram local</title>
+<script src="/static/mermaid.min.js"></script>
+<style>
+  :root{--bg:#fafaf8;--fg:#1f1f1f;--muted:#777;--line:#ddd;--acc:#2f6fed;--panel:#fff}
+  body.dark{--bg:#1b1b1d;--fg:#e8e8e8;--muted:#999;--line:#444;--panel:#242427}
+  body{font:15px/1.6 -apple-system,"Pretendard","Apple SD Gothic Neo",system-ui,sans-serif;background:var(--bg);color:var(--fg);margin:0;padding:16px;height:100vh;box-sizing:border-box;display:flex;flex-direction:column}
+  h1{font-size:18px;margin:0 0 8px}h1 small{font-weight:400;color:var(--muted);font-size:13px}
+  .bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
+  select,button,textarea{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--fg)}
+  button{cursor:pointer}button.primary{background:var(--acc);color:#fff;border-color:var(--acc)}button:disabled{opacity:.5}
+  #status{color:var(--muted);font-size:13px}
+  .main{display:flex;gap:14px;flex:1;min-height:0}
+  .left{width:360px;min-width:280px;display:flex;flex-direction:column;gap:8px}
+  .right{flex:1;display:flex;flex-direction:column;gap:8px;min-width:0}
+  #chat{flex:1;overflow:auto;border:1px solid var(--line);border-radius:6px;padding:10px;background:var(--panel)}
+  .msg{margin:6px 0;padding:8px 10px;border-radius:8px;font-size:14px;white-space:pre-wrap}
+  .msg.user{background:#e7efff}.msg.assistant{background:#f1f1ee;font-family:ui-monospace,Menlo,monospace;font-size:12px;max-height:160px;overflow:auto}
+  body.dark .msg.user{background:#2b3a5c}body.dark .msg.assistant{background:#2d2d30}
+  #q{height:80px;resize:vertical}
+  #examples{display:flex;flex-wrap:wrap;gap:4px}#examples button{font-size:12px;padding:3px 8px}
+  #view{flex:1;overflow:auto;border:1px solid var(--line);border-radius:6px;background:var(--panel);padding:12px;display:flex;align-items:flex-start;justify-content:center}
+  #view svg{max-width:100%;height:auto}
+  #src{height:150px;font-family:ui-monospace,Menlo,monospace;font-size:12px;resize:vertical}
+  #err{color:#a33;font-size:13px;white-space:pre-wrap}
+  details{font-size:13px}#runs li{cursor:pointer;list-style:none;padding:2px 0}#runs li:hover{color:var(--acc)}
+  @media (max-width:800px){.main{flex-direction:column}.left{width:auto}}
+</style>
+
+<h1>diagram local <small>— 말로 설명하면 Mermaid 다이어그램 · 로컬 LLM</small></h1>
+<div class="bar">
+  <label>유형 <select id="type">
+    <option value="auto">자동</option><option value="flowchart">flowchart</option><option value="sequence">sequence</option>
+    <option value="class">class</option><option value="er">ER</option><option value="state">state</option><option value="gantt">gantt</option>
+    <option value="mindmap">mindmap</option><option value="timeline">timeline</option><option value="pie">pie</option></select></label>
+  <label>모델 <select id="model"></select></label>
+  <button id="theme">🌙 테마</button>
+  <button id="dlsvg">SVG</button><button id="dlpng">PNG</button><button id="copy">소스 복사</button>
+  <button id="new">새로</button>
+  <span id="status"></span>
+</div>
+<div class="main">
+  <div class="left">
+    <div id="examples"></div>
+    <div id="chat"></div>
+    <textarea id="q" placeholder="그릴 내용을 설명하세요. 결과가 나오면 '다듬기' 요청도 여기서 (예: 승인 단계 하나 더 넣어줘)"></textarea>
+    <div class="bar"><button id="go" class="primary">그리기</button><span id="hint" style="color:var(--muted);font-size:12px">⌘/Ctrl+Enter</span></div>
+    <details><summary>이전 다이어그램</summary><ul id="runs"></ul></details>
+  </div>
+  <div class="right">
+    <div id="view"><span style="color:var(--muted)">여기에 다이어그램이 그려집니다</span></div>
+    <div id="err"></div>
+    <textarea id="src" placeholder="Mermaid 소스 (직접 고치면 바로 다시 그림)"></textarea>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const MODEL_DEFAULT = %MODEL%;
+let messages = [], lastSvg = '', repairing = false;
+const EXAMPLES = [
+  ['조직도', '원장 아래 연구부·행정부·안전관리실이 있고, 연구부는 원자로연구팀·재료연구팀·계측팀, 행정부는 총무팀·인사팀·회계팀으로 구성된 조직도'],
+  ['승인 절차', '연구원이 기안하면 팀장 검토, 부서장 승인, 금액 1천만원 이상이면 원장 결재까지 가고, 반려되면 기안자에게 돌아가는 결재 절차'],
+  ['실험 파이프라인', '시료 채취 → 전처리 → 측정(XRD, SEM 병렬) → 데이터 정리 → 통계 분석 → 보고서 작성 순서의 실험 파이프라인'],
+  ['시스템 구성도', '사용자 브라우저가 에이전트 페이지에 접속하면 kordoc 파서가 문서를 변환하고 vLLM 서버가 답을 만들고 결과를 저장소에 남기는 시스템 구성'],
+  ['과제 일정 간트', '2026년 1월부터 12월까지: 기획 1~2월, 설계 2~4월, 제작 4~8월, 시험 8~10월, 보고서 10~12월 과제 일정 간트차트'],
+  ['회의 안건 마인드맵', '월례회의 안건: 1) 예산 집행 현황(상반기 실적, 하반기 계획) 2) 안전 점검(설비, 교육) 3) 신규 과제(공모, 인력) 4) 기타 마인드맵'],
+];
+$('examples').innerHTML = EXAMPLES.map((e, i) => `<button data-i="${i}">${e[0]}</button>`).join('');
+$('examples').querySelectorAll('button').forEach(b => b.onclick = () => { $('q').value = EXAMPLES[b.dataset.i][1]; });
+
+mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'default' });
+fetch('/api/models').then(r => r.json()).then(ms => {
+  $('model').innerHTML = ms.map(m => `<option ${m === MODEL_DEFAULT ? 'selected' : ''}>${m}</option>`).join('');
+}).catch(() => $('status').textContent = 'LLM 서버에 연결할 수 없습니다');
+
+$('theme').onclick = () => { document.body.classList.toggle('dark'); mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: document.body.classList.contains('dark') ? 'dark' : 'default' }); render($('src').value); };
+
+async function render(src, allowRepair = true) {
+  $('err').textContent = '';
+  if (!src.trim()) return;
+  try {
+    const { svg } = await mermaid.render('m' + Date.now(), src);
+    $('view').innerHTML = svg; lastSvg = svg;
+  } catch (e) {
+    const msg = (e && e.message) || String(e);
+    $('err').textContent = '파싱 오류: ' + msg;
+    if (allowRepair && !repairing && messages.length) {
+      repairing = true; $('status').textContent = '파싱 오류 → LLM 자동 수정 1회';
+      try {
+        const r = await fetch('/api/repair', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ source: src, error: msg, model: $('model').value }) }).then(r => r.json());
+        if (r.source) { $('src').value = r.source; messages[messages.length - 1].content = r.source; await render(r.source, false); $('status').textContent = $('err').textContent ? '자동 수정 실패 — 소스를 직접 고치세요' : '자동 수정됨'; }
+      } finally { repairing = false; }
+    }
+  }
+}
+$('src').addEventListener('input', () => render($('src').value, false));
+
+function addMsg(role, text) { const d = document.createElement('div'); d.className = 'msg ' + role; d.textContent = text; $('chat').appendChild(d); $('chat').scrollTop = 1e9; return d; }
+
+$('go').onclick = async () => {
+  const text = $('q').value.trim(); if (!text) return;
+  const cur = $('src').value.trim();
+  const content = (cur && messages.length) ? `[현재 소스]\n${cur}\n\n[요청]\n${text}` : text;
+  messages.push({ role: 'user', content }); addMsg('user', text); $('q').value = '';
+  $('go').disabled = true; $('status').textContent = '생성 중…'; const out = addMsg('assistant', ''); const t0 = Date.now();
+  try {
+    const r = await fetch('/api/diagram', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages, type: $('type').value, model: $('model').value }) });
+    const reader = r.body.getReader(), dec = new TextDecoder(); let buf = '';
+    while (true) {
+      const { value, done } = await reader.read(); if (done) break;
+      buf += dec.decode(value, { stream: true });
+      let i; while ((i = buf.indexOf('\n\n')) >= 0) {
+        const line = buf.slice(0, i); buf = buf.slice(i + 2);
+        if (!line.startsWith('data: ')) continue;
+        const ev = JSON.parse(line.slice(6));
+        if (ev.token) { out.textContent += ev.token; $('chat').scrollTop = 1e9; }
+        if (ev.error) throw new Error(ev.error);
+        if (ev.done) { out.textContent = ev.done.source; messages.push({ role: 'assistant', content: ev.done.source }); $('src').value = ev.done.source; await render(ev.done.source); loadRuns(); }
+      }
+    }
+    $('status').textContent = `완료 ${((Date.now() - t0) / 1000).toFixed(0)}초`;
+  } catch (e) { $('status').textContent = '오류: ' + e.message; messages.pop(); }
+  $('go').disabled = false;
+};
+$('q').addEventListener('keydown', e => { if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') $('go').click(); });
+$('new').onclick = () => { messages = []; $('chat').innerHTML = ''; $('src').value = ''; $('view').innerHTML = ''; $('err').textContent = ''; };
+
+function dl(name, blob) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); }
+$('dlsvg').onclick = () => lastSvg && dl('diagram.svg', new Blob([lastSvg], { type: 'image/svg+xml' }));
+$('dlpng').onclick = () => {
+  if (!lastSvg) return;
+  const svgEl = $('view').querySelector('svg'); const w = svgEl.viewBox.baseVal.width || svgEl.clientWidth, h = svgEl.viewBox.baseVal.height || svgEl.clientHeight;
+  const img = new Image(); const c = document.createElement('canvas'); c.width = w * 2; c.height = h * 2;
+  img.onload = () => { const ctx = c.getContext('2d'); ctx.fillStyle = document.body.classList.contains('dark') ? '#1b1b1d' : '#fff'; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(img, 0, 0, c.width, c.height); c.toBlob(b => dl('diagram.png', b)); };
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(lastSvg.replace('<svg', `<svg width="${w}" height="${h}"`));
+};
+$('copy').onclick = () => navigator.clipboard.writeText($('src').value);
+
+async function loadRuns() {
+  const rs = await fetch('/api/runs').then(r => r.json());
+  $('runs').innerHTML = rs.map(r => `<li data-id="${r.id}">${r.ts} · ${r.type} · ${r.head}…</li>`).join('') || '<li>없음</li>';
+  $('runs').querySelectorAll('li[data-id]').forEach(li => li.onclick = async () => {
+    const j = await fetch('/api/runs/' + li.dataset.id).then(r => r.json());
+    messages = j.messages; $('chat').innerHTML = ''; messages.forEach(m => addMsg(m.role, m.role === 'user' ? m.content.replace(/^\[현재 소스\][\s\S]*\[요청\]\n/, '') : m.content));
+    $('src').value = j.source; render(j.source, false);
+  });
+}
+loadRuns();
+</script>
