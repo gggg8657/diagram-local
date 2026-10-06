@@ -13,7 +13,7 @@
 - flowchart 라벨의 한글·공백·괄호·특수문자는 반드시 큰따옴표로 감싼다: `A["인증 서버 (SSO)"]`, `A -->|"토큰 발급"| B`.
 - 화살표 라벨에 `|`를 넣지 않는다. 라벨 안에 큰따옴표를 쓰지 않는다.
 - sequenceDiagram: `participant A as "인증 서버"` 형태로 별칭을 쓰고, 메시지는 `A->>B: 한글 설명`.
-- gantt: `dateFormat YYYY-MM-DD`, 각 작업은 `작업명 :id, 2026-01-01, 10d` 형식. section 사용.
+- gantt: `dateFormat YYYY-MM-DD`, 각 작업은 `작업명 :id, 2026-01-01, 10d` 형식. section 사용 **gantt·mindmap·timeline·pie 제목에는 따옴표를 쓰지 않는다**(`title 2026년 과제 일정`, `문헌조사 :t1, …`) — 따옴표가 그림에 그대로 찍힌다(pie 항목만 예외).
 - mindmap·timeline: 들여쓰기(공백 2칸·4칸)로 위계. 괄호 모양으로 노드 모양 지정 가능.
 - pie: `pie title 제목` 뒤에 `"항목" : 숫자`.
 - classDiagram 관계는 `A --> B : 설명`, erDiagram은 `A ||--o{ B : "관계"`.
