@@ -162,7 +162,7 @@ def list_runs():
     if not os.path.isdir(WS):
         return []
     out = []
-    for n in sorted(os.listdir(WS), reverse=True)[:50]:
+    for n in sorted(os.listdir(WS), key=lambda n: os.path.getmtime(os.path.join(WS, n)), reverse=True)[:50]:
         if n.endswith(".json"):
             try:
                 j = json.load(open(os.path.join(WS, n), encoding="utf-8"))
