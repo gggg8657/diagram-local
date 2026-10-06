@@ -5,3 +5,6 @@ Bundled third-party software:
   mermaid 11.17.2 (static/mermaid.min.js) — https://github.com/mermaid-js/mermaid — MIT License, Copyright (c) 2014-2025 Knut Sveidqvist
 
 Files authored for this package (MIT): app.py, ui.html, goal-prompt.md, selftest.py, setup.sh, README.md
+
+This package: Copyright (c) 2026 김동주 <dongjukim.dev@gmail.com>
+화면 하단·메타데이터의 저작자 표기는 지우거나 바꾸지 마세요.
