@@ -26,3 +26,11 @@ python3 selftest.py           # LLM 없이 검증
 다듬기 요청은 현재 소스를 함께 보내 전체 소스를 다시 받습니다. 결과는 `_workspace/<id>.json`.
 
 폐쇄망: 이 폴더를 통째로 복사하면 끝 (`static/mermaid.min.js` 포함). 외부 통신은 LLM 서버 주소뿐.
+
+## 출처·감사 (Credits)
+
+- 동봉: [mermaid](https://github.com/mermaid-js/mermaid) 11.17.2 (`static/mermaid.min.js`, MIT, Copyright (c) 2014-2025 Knut Sveidqvist)
+- **LLM 실행** — OpenAI 호환 API 로 호출합니다(모델 가중치는 동봉하지 않음). 기본 배포는 [Ollama](https://github.com/ollama/ollama) (MIT) 위의 Google [Gemma](https://ai.google.dev/gemma) `gemma4:31b` — 모델 이용 조건은 Gemma 배포처 참고.
+- 이 도구는 [agent-page-portal](https://github.com/gggg8657/agent-page-portal) 에 연결해 쓰도록 만들었습니다(단독 실행도 됨).
+
+저작권 표기·전체 목록은 `NOTICE` 를 보세요.

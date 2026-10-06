@@ -6,27 +6,27 @@
 <style>
   :root{--bg:#fafaf8;--fg:#1f1f1f;--muted:#777;--line:#ddd;--acc:#2f6fed;--panel:#fff}
   body.dark{--bg:#1b1b1d;--fg:#e8e8e8;--muted:#999;--line:#444;--panel:#242427}
-  body{font:15px/1.6 -apple-system,"Pretendard","Apple SD Gothic Neo",system-ui,sans-serif;background:var(--bg);color:var(--fg);margin:0;padding:16px;height:100vh;box-sizing:border-box;display:flex;flex-direction:column}
+  body{font:15px/1.6 -apple-system,"Pretendard","Apple SD Gothic Neo",system-ui,sans-serif;background:var(--bg);color:var(--fg);margin:0;padding:16px;height:100vh;box-sizing:border-box;display:flex;flex-direction:column;overflow-wrap:anywhere}
   h1{font-size:18px;margin:0 0 8px}h1 small{font-weight:400;color:var(--muted);font-size:13px}
   .bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:8px}
   select,button,textarea{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--panel);color:var(--fg)}
   button{cursor:pointer}button.primary{background:var(--acc);color:#fff;border-color:var(--acc)}button:disabled{opacity:.5}
   #status{color:var(--muted);font-size:13px}
   .main{display:flex;gap:14px;flex:1;min-height:0}
-  .left{width:360px;min-width:280px;display:flex;flex-direction:column;gap:8px}
+  .left{width:360px;min-width:280px;display:flex;flex-direction:column;gap:8px;min-height:0;overflow-y:auto}.left>*{flex-shrink:0}
   .right{flex:1;display:flex;flex-direction:column;gap:8px;min-width:0}
-  #chat{flex:1;overflow:auto;border:1px solid var(--line);border-radius:6px;padding:10px;background:var(--panel)}
+  #chat{flex:1;min-height:120px;overflow:auto;border:1px solid var(--line);border-radius:6px;padding:10px;background:var(--panel)}
   .msg{margin:6px 0;padding:8px 10px;border-radius:8px;font-size:14px;white-space:pre-wrap}
   .msg.user{background:#e7efff}.msg.assistant{background:#f1f1ee;font-family:ui-monospace,Menlo,monospace;font-size:12px;max-height:160px;overflow:auto}
   body.dark .msg.user{background:#2b3a5c}body.dark .msg.assistant{background:#2d2d30}
   #q{height:80px;resize:vertical}
   #examples{display:flex;flex-wrap:wrap;gap:4px}#examples button{font-size:12px;padding:3px 8px}
-  #view{flex:1;overflow:auto;border:1px solid var(--line);border-radius:6px;background:var(--panel);padding:12px;display:flex;align-items:flex-start;justify-content:center}
+  #view{flex:1;min-height:240px;overflow:auto;border:1px solid var(--line);border-radius:6px;background:var(--panel);padding:12px;display:flex;align-items:flex-start;justify-content:center}
   #view svg{max-width:100%;height:auto}
   #src{height:150px;font-family:ui-monospace,Menlo,monospace;font-size:12px;resize:vertical}
-  #err{color:#a33;font-size:13px;white-space:pre-wrap}
-  details{font-size:13px}#runs li{cursor:pointer;list-style:none;padding:2px 0}#runs li:hover{color:var(--acc)}
-  @media (max-width:800px){.main{flex-direction:column}.left{width:auto}}
+  #err{color:#a33;font-size:13px;white-space:pre-wrap;max-height:120px;overflow:auto;flex-shrink:0}
+  details{font-size:13px}#runs{max-height:30vh;overflow:auto}#runs li{cursor:pointer;list-style:none;padding:2px 0}#runs li:hover{color:var(--acc)}
+  @media (max-width:800px){body{height:auto;min-height:100vh}.main{flex:none;flex-direction:column}.left{width:auto;min-width:0;min-height:auto}#view{min-height:300px}}
 </style>
 
 <h1>diagram local <small>— 말로 설명하면 Mermaid 다이어그램 · 로컬 LLM</small></h1>
