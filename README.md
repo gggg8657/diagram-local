@@ -50,11 +50,13 @@ python3 selftest.py           # LLM 없이 검증
 | `NUM_CTX` | `16384` | Ollama 컨텍스트 |
 | `PORT` | `8768` | |
 | `WORKSPACE` | `./_workspace` | 실행 기록 저장 폴더 (포털이 도구별 데이터 폴더로 지정) |
+| `BIND` | (모든 인터페이스) | 듣는 주소. 포털은 `127.0.0.1` 로 띄워 포털을 거쳐서만 접근 |
 
 ## 구조
 
 흐름: 설명 → `goal-prompt.md`(출력 계약: Mermaid만, 한글 라벨은 따옴표, 노드 id 영문) → LLM 1콜 → 서버 1차 검사(선언·괄호·따옴표) → 브라우저 mermaid 렌더 → 파싱 오류면 `/api/repair` 로 LLM 수정 1회.
 다듬기 요청은 현재 소스를 함께 보내 전체 소스를 다시 받습니다. 결과는 `$WORKSPACE/<id>.json`(입력·대화·Mermaid 소스).
+기록은 사용자별로 따로 저장합니다(포털 접속자 기준, 포털이 넘기는 `X-Agent-User` 헤더 → `$WORKSPACE/u/<사용자>/`). 서버 주인(헤더 없음·`owner`)은 `$WORKSPACE` 그대로라 예전 기록도 보입니다.
 
 ## 폐쇄망
 

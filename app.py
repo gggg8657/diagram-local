@@ -148,24 +148,34 @@ def repair(src, error, model=MODEL):
     return _clean(ollama(system, [{"role": "user", "content": user}], model))
 
 
-def save(messages, dtype, src, model):
-    os.makedirs(WS, exist_ok=True)
+def user_ws(h):
+    """포털이 넘긴 사용자별 작업 폴더. owner(서버 주인)·헤더 없음(단독 실행) = 예전 WORKSPACE 그대로"""
+    u = (h.headers.get("X-Agent-User") or "owner").strip()
+    if u == "owner":
+        return WS
+    d = os.path.join(WS, "u", re.sub(r"[^A-Za-z0-9_.-]", "_", u)[:64] or "_")
+    os.makedirs(d, exist_ok=True)
+    return d
+
+
+def save(messages, dtype, src, model, ws=WS):
+    os.makedirs(ws, exist_ok=True)
     rid = f"{datetime.date.today()}-{secrets.token_hex(2)}"
     head = next((m["content"] for m in messages if m["role"] == "user"), "")[:60]
-    write(os.path.join(WS, rid + ".json"), json.dumps({"id": rid, "type": dtype, "model": model, "messages": messages, "source": src,
+    write(os.path.join(ws, rid + ".json"), json.dumps({"id": rid, "type": dtype, "model": model, "messages": messages, "source": src,
                                                         "head": head, "ts": datetime.datetime.now().isoformat(timespec="seconds")},
                                                        ensure_ascii=False, indent=1))
     return rid
 
 
-def list_runs():
-    if not os.path.isdir(WS):
+def list_runs(ws=WS):
+    if not os.path.isdir(ws):
         return []
     out = []
-    for n in sorted(os.listdir(WS), key=lambda n: os.path.getmtime(os.path.join(WS, n)), reverse=True)[:50]:
+    for n in sorted(os.listdir(ws), key=lambda n: os.path.getmtime(os.path.join(ws, n)), reverse=True)[:50]:
         if n.endswith(".json"):
             try:
-                j = json.load(open(os.path.join(WS, n), encoding="utf-8"))
+                j = json.load(open(os.path.join(ws, n), encoding="utf-8"))
                 out.append({k: j.get(k) for k in ("id", "type", "model", "head", "ts")})
             except Exception:
                 pass
@@ -212,10 +222,10 @@ class H(BaseHTTPRequestHandler):
             if self.path == "/api/models":
                 return self._send(models())
             if self.path == "/api/runs":
-                return self._send(list_runs())
+                return self._send(list_runs(user_ws(self)))
             m = re.fullmatch(r"/api/runs/(\d{4}-\d{2}-\d{2}-[0-9a-f]{4})", self.path)
             if m:
-                return self._send(read(os.path.join(WS, m.group(1) + ".json")).encode())
+                return self._send(read(os.path.join(user_ws(self), m.group(1) + ".json")).encode())
             if self.path == "/static/mermaid.min.js":
                 with open(os.path.join(ROOT, "static", "mermaid.min.js"), "rb") as f:
                     return self._send(f.read(), "application/javascript")
@@ -249,7 +259,7 @@ class H(BaseHTTPRequestHandler):
         try:
             dtype = req.get("type") or "auto"
             src = diagram(messages, dtype, model, on_token=lambda t: emit({"token": t}))
-            rid = save(messages + [{"role": "assistant", "content": src}], dtype, src, model)
+            rid = save(messages + [{"role": "assistant", "content": src}], dtype, src, model, user_ws(self))
             emit({"done": {"id": rid, "source": src, "sanity": sanity(src)}})
         except Exception as e:
             emit({"error": f"{type(e).__name__}: {e}"})
@@ -266,4 +276,4 @@ if __name__ == "__main__":
         print(src)
         sys.exit(1 if bad else 0)
     print(f"diagram local → http://localhost:{PORT}  (model={MODEL}, llm={LLM_API} {LLM_BASE})  {_SIG}")
-    ThreadingHTTPServer(("", PORT), H).serve_forever()
+    ThreadingHTTPServer((os.environ.get("BIND", ""), PORT), H).serve_forever()
