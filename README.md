@@ -2,6 +2,8 @@
 
 업무 흐름이나 구조를 한국어로 설명하면 로컬 LLM이 Mermaid 소스를 쓰고, 브라우저가 바로 그림으로 그립니다. 소스를 직접 고치거나 대화로 다듬은 뒤 SVG·PNG로 내려받습니다.
 
+> ⚠️ 연구·내부 시험용 프로토타입입니다(배포·상업 서비스용 아님). 제3자 구성요소의 라이선스는 THIRD_PARTY_NOTICES.md 를 확인하세요.
+
 ![diagram-local 화면 — ① 유형·테마 ② 설명·다듬기 ③ 미리보기 ④ 소스 편집](docs/img/diagram-ui.png)
 
 ## 무엇을 하나
@@ -64,12 +66,17 @@ python3 selftest.py           # LLM 없이 검증
 
 ## 출처·감사 (Credits)
 
-- 동봉: [mermaid](https://github.com/mermaid-js/mermaid) 11.17.2 (`static/mermaid.min.js`, MIT, Copyright (c) 2014-2025 Knut Sveidqvist)
-- **LLM 실행** — OpenAI 호환 API 로 호출합니다(모델 가중치는 동봉하지 않음). 기본 배포는 [Ollama](https://github.com/ollama/ollama) (MIT) 위의 Google [Gemma](https://ai.google.dev/gemma) `gemma4:31b` — 모델 이용 조건은 Gemma 배포처 참고.
+- 동봉: [mermaid](https://github.com/mermaid-js/mermaid) 11.17.2 (`static/mermaid.min.js`, MIT, Copyright (c) 2014-2022 Knut Sveidqvist)
+- `setup.sh` 는 Ollama 에 모델이 하나도 없을 때만 `qwen3:8b` ([Apache-2.0](https://huggingface.co/Qwen/Qwen3-8B)) 를 내려받습니다.
+- **LLM 실행** — OpenAI 호환 API 로 호출합니다(모델 가중치는 동봉하지 않음). 기본 배포는 [Ollama](https://github.com/ollama/ollama) (MIT) 위의 Google [Gemma 4](https://ai.google.dev/gemma) `gemma4:31b` ([Apache-2.0](https://ai.google.dev/gemma/docs/gemma_4_license)).
 - 이 도구는 [agent-page-portal](https://github.com/gggg8657/agent-page-portal) 에 연결해 쓰도록 만들었습니다(단독 실행도 됨).
 
-저작권 표기·전체 목록은 `NOTICE` 를 보세요.
+버전·라이선스·상업 이용 여부 전체 표는 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md), 저작권 표기는 `NOTICE` 를 보세요.
 
 ## 라이선스
 
-MIT License — Copyright (c) 2026 gggg8657 (DongJu Kim). `LICENSE` 참고.
+MIT License — Copyright (c) 2026 DongJu Kim (gggg8657). `LICENSE` 참고. 제3자 구성요소는 각자의 라이선스를 따릅니다.
+
+## 만든 사람
+
+DongJu Kim (gggg8657) — 설계·구현
