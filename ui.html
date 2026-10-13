@@ -146,13 +146,24 @@ $('q').addEventListener('keydown', e => { if ((e.metaKey || e.ctrlKey) && e.key 
 $('new').onclick = () => { messages = []; $('chat').innerHTML = ''; $('src').value = ''; $('view').innerHTML = ''; $('err').textContent = ''; };
 
 function dl(name, blob) { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = name; a.click(); }
-$('dlsvg').onclick = () => lastSvg && dl('diagram.svg', new Blob([lastSvg], { type: 'image/svg+xml' }));
-$('dlpng').onclick = () => {
+// 포털 테마 때문에 어두워진 화면(토글 숨김)에서는 내보내기만 밝은 종이(Mermaid default·PNG 바탕 #fff)로 따로 그림.
+// 단독 실행·classic-light 에서 🌙 토글로 켠 경우는 예전대로 화면 그대로 내보냄.
+async function exportSvg() {
+  if (!(portalTheme() && document.body.classList.contains('dark'))) return { svg: lastSvg, paper: false };
+  mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'default' });
+  try { return { svg: (await mermaid.render('x' + Date.now(), $('src').value)).svg, paper: true }; }
+  catch (e) { return { svg: lastSvg, paper: false }; }
+  finally { mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: document.body.classList.contains('dark') ? 'dark' : 'default' }); }
+}
+$('dlsvg').onclick = async () => { if (!lastSvg) return; const { svg } = await exportSvg(); dl('diagram.svg', new Blob([svg], { type: 'image/svg+xml' })); };
+$('dlpng').onclick = async () => {
   if (!lastSvg) return;
-  const svgEl = $('view').querySelector('svg'); const w = svgEl.viewBox.baseVal.width || svgEl.clientWidth, h = svgEl.viewBox.baseVal.height || svgEl.clientHeight;
+  const { svg, paper } = await exportSvg();
+  const svgEl = $('view').querySelector('svg'); let w = svgEl.viewBox.baseVal.width || svgEl.clientWidth, h = svgEl.viewBox.baseVal.height || svgEl.clientHeight;
+  if (paper) { const vb = new DOMParser().parseFromString(svg, 'image/svg+xml').documentElement.viewBox.baseVal; if (vb && vb.width) { w = vb.width; h = vb.height; } }
   const img = new Image(); const c = document.createElement('canvas'); c.width = w * 2; c.height = h * 2;
-  img.onload = () => { const ctx = c.getContext('2d'); ctx.fillStyle = document.body.classList.contains('dark') ? '#1b1b1d' : '#fff'; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(img, 0, 0, c.width, c.height); c.toBlob(b => dl('diagram.png', b)); };
-  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(lastSvg.replace('<svg', `<svg width="${w}" height="${h}"`));
+  img.onload = () => { const ctx = c.getContext('2d'); ctx.fillStyle = !paper && document.body.classList.contains('dark') ? '#1b1b1d' : '#fff'; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(img, 0, 0, c.width, c.height); c.toBlob(b => dl('diagram.png', b)); };
+  img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg.replace(/^<svg([^>]*?) width="[^"]*"/, '<svg$1').replace('<svg', `<svg width="${w}" height="${h}"`));  // Mermaid 의 width="100%" 와 겹치면 그림이 안 읽힘
 };
 $('copy').onclick = () => navigator.clipboard.writeText($('src').value);
 
