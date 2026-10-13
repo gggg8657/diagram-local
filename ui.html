@@ -75,9 +75,16 @@ $('examples').querySelectorAll('button').forEach(b => b.onclick = () => { $('q')
 // classic-light·단독 실행은 예전처럼 토글(userDark). 어둡게가 바뀌면 Mermaid 테마도 맞춰 다시 그림(토글과 같은 경로).
 let userDark = false;
 function portalTheme() { const t = document.documentElement.dataset.agTheme || ''; return t && t !== 'classic-light' ? t : ''; }
+// Mermaid 설정. 포털 어두운 테마일 때만 연결선 라벨('예/아니오') 바탕을 그림 칸(#view) 바탕색으로 — dark 테마 기본은 밝은 상자라 튐.
+// 단독 실행·🌙 토글·내보내기(default)는 예전 그대로
+function mcfg(dark) {
+  const c = { startOnLoad: false, securityLevel: 'strict', theme: dark ? 'dark' : 'default' };
+  if (dark && portalTheme()) { const bg = getComputedStyle($('view')).backgroundColor; if (bg && !/rgba\(0, 0, 0, 0\)|transparent/.test(bg)) c.themeVariables = { edgeLabelBackground: bg }; }
+  return c;
+}
 function setDark(dark) {
   document.body.classList.toggle('dark', dark);
-  mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: dark ? 'dark' : 'default' });
+  mermaid.initialize(mcfg(dark));
 }
 function applyTheme() {
   const t = portalTheme(), dark = t ? /dark$/.test(t) : userDark;
@@ -96,6 +103,7 @@ $('theme').onclick = () => { userDark = !document.body.classList.contains('dark'
 async function render(src, allowRepair = true) {
   $('err').textContent = '';
   if (!src.trim()) return;
+  if (portalTheme()) mermaid.initialize(mcfg(document.body.classList.contains('dark')));  // 그릴 때의 실제 바탕색으로
   try {
     const { svg } = await mermaid.render('m' + Date.now(), src);
     $('view').innerHTML = svg; lastSvg = svg;
@@ -153,7 +161,7 @@ async function exportSvg() {
   mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: 'default' });
   try { return { svg: (await mermaid.render('x' + Date.now(), $('src').value)).svg, paper: true }; }
   catch (e) { return { svg: lastSvg, paper: false }; }
-  finally { mermaid.initialize({ startOnLoad: false, securityLevel: 'strict', theme: document.body.classList.contains('dark') ? 'dark' : 'default' }); }
+  finally { mermaid.initialize(mcfg(document.body.classList.contains('dark'))); }
 }
 $('dlsvg').onclick = async () => { if (!lastSvg) return; const { svg } = await exportSvg(); dl('diagram.svg', new Blob([svg], { type: 'image/svg+xml' })); };
 $('dlpng').onclick = async () => {
