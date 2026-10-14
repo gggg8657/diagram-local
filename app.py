@@ -276,4 +276,4 @@ if __name__ == "__main__":
         print(src)
         sys.exit(1 if bad else 0)
     print(f"diagram local → http://localhost:{PORT}  (model={MODEL}, llm={LLM_API} {LLM_BASE})  {_SIG}")
-    ThreadingHTTPServer((os.environ.get("BIND", ""), PORT), H).serve_forever()
+    ThreadingHTTPServer((os.environ.get("BIND", "127.0.0.1"), PORT), __import__("portal_auth").install(H, "diagram-local")).serve_forever()
